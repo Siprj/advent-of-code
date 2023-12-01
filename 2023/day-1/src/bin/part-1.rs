@@ -8,15 +8,13 @@ fn main() {
             let first = l
                 .chars()
                 .find(|c| c.is_digit(10))
-                .map(|c| c.to_digit(10))
-                .flatten()
+                .and_then(|c| c.to_digit(10))
                 .unwrap();
             let last = l
                 .chars()
                 .rev()
                 .find(|c| c.is_digit(10))
-                .map(|c| c.to_digit(10))
-                .flatten()
+                .and_then(|c| c.to_digit(10))
                 .unwrap();
             (first * 10) + last
         })
