@@ -1,5 +1,3 @@
-use std::fs::read_to_string;
-
 const NUMBERS: [(&str, u32); 9] = [
     ("one", 1),
     ("two", 2),
@@ -40,9 +38,8 @@ fn get_last_number(str: &str) -> u32 {
     unreachable!()
 }
 
-fn main() {
-    let content: String = read_to_string("input.txt").unwrap();
-    let res: u32 = content
+fn part_2(input: &str) -> String {
+    let result: u32 = input
         .split_whitespace()
         .map(|l| {
             let first = get_first_number(l);
@@ -50,5 +47,28 @@ fn main() {
             (first * 10) + last
         })
         .sum();
-    println!("sum: {}", res);
+    result.to_string()
+}
+
+fn main() {
+    let input = include_str!("input.txt");
+    let result = part_2(input);
+    println!("Result: {}", result);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let input: &str = "two1nine
+eightwothree
+abcone2threexyz
+xtwone3four
+4nineeightseven2
+zoneight234
+7pqrstsixteen";
+        assert_eq!(part_2(input), "281");
+    }
 }

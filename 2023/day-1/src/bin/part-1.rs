@@ -1,8 +1,5 @@
-use std::fs::read_to_string;
-
-fn main() {
-    let content: String = read_to_string("input.txt").unwrap();
-    let res: u32 = content
+fn part_1(input: &str) -> String {
+    let result: u32 = input
         .split_whitespace()
         .map(|l| {
             let first = l
@@ -19,5 +16,25 @@ fn main() {
             (first * 10) + last
         })
         .sum();
-    println!("sum: {}", res);
+    result.to_string()
+}
+
+fn main() {
+    let input = include_str!("input.txt");
+    let result = part_1(input);
+    println!("Result: {}", result);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let input: &str = "1abc2
+pqr3stu8vwx
+a1b2c3d4e5f
+treb7uchet";
+        assert_eq!(part_1(input), "142");
+    }
 }
