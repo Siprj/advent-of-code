@@ -54,14 +54,14 @@ fn part_2(input: &str) -> String {
             } else if card_distrubution[0].1 + jokers >= 4 {
                 6
             } else if card_distrubution[0].1 + jokers >= 3 {
-                let remaining_jokers = card_distrubution[0].1 + jokers;
+                let remaining_jokers =  jokers - (3 - card_distrubution[0].1);
                 if card_distrubution[1].1 + remaining_jokers >= 2 {
                     5
                 } else {
                     4
                 }
             } else if card_distrubution[0].1 + jokers >= 2 {
-                let remaining_jokers = card_distrubution[0].1 + jokers;
+                let remaining_jokers =  jokers - (2 - card_distrubution[0].1);
                 if card_distrubution[1].1 + remaining_jokers >= 2 {
                     3
                 } else {
