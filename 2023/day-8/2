@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-use num::integer::lcm;
 
 enum Direction {
     Left,
@@ -28,32 +27,40 @@ fn parse(input: &str) -> (Vec<Direction>, BTreeMap<&str, (&str, &str)>){
 fn part_2(input: &str) -> String {
     let (directions, map) = parse(input);
     let start_positions: Vec<&str> = map.keys().filter(|k| k.chars().nth(2) == Some('A')).copied().collect();
-    let mut end_nodes: Vec<usize> = Vec::with_capacity(6);
+    println!("directions.len(): {}", directions.len());
+    println!("start_positions.len(): {}", start_positions.len());
+    println!("start_positions: {:?}", start_positions);
     for start_position in start_positions.iter() {
         let mut position = start_position;
-        let mut step_count: usize = 0;
-
-        // After investigating the data a bit a turns out there are loops with
-        // exacly one endpoin for each start position. These loops are not
-        // looping to the starting elements but they have the same lenght
-        // anyway. So we can take the position of the rist end point we can
-        // find for eatch starting position.
-        for direction in directions.iter().cycle() {
+        let mut index = 0;
+        let mut step_count: u32 = 0;
+        let mut end_nodes: Vec<(u32, &str)> = Vec::with_capacity(200);
+        loop {
             let (l, r) = map.get(position).unwrap();
-            match direction {
-                Direction::Left => position = l,
-                Direction::Right => position = r,
+            match directions[index] {
+                Direction::Left => *position = *l,
+                Direction::Right => *position = *r,
             }
+            index += 1;
             step_count += 1;
 
             if position.as_bytes()[2] == b'Z' {
-                end_nodes.push(step_count);
-                break;
+                end_nodes.push((step_count, position));
+            }
+
+            if index == directions.len() {
+                index = 0;
+                if start_position == position {
+                    break;
+                }
             }
         }
+        println!("loop detected for start_position: {}", start_position);
+        println!("step_count: {}", &step_count);
+        println!("end_nodes: {:?}", &end_nodes);
     }
+    todo!()
 
-    end_nodes.iter().fold(1usize, |acc, distance| lcm(acc, *distance)).to_string()
 }
 
 fn main() {
