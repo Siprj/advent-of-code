@@ -1,6 +1,5 @@
 #![feature(iter_intersperse)]
 use std::{iter::repeat, collections::HashMap};
-use rayon::prelude::*;
 
 fn parse(input: &str) -> Vec<(Vec<char>, Vec<usize>)> {
     input.lines().map(|l|{
@@ -113,7 +112,7 @@ fn solution_count(input: (Vec<char>, Vec<usize>)) -> usize {
 fn part_2(input: &str) -> String {
     let inputs = parse(input);
 
-    let count: usize = inputs.into_par_iter().map(solution_count).sum();
+    let count: usize = inputs.iter().cloned().map(solution_count).sum();
     count.to_string()
 }
 
