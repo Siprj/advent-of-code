@@ -15,21 +15,25 @@ fn equal_columns(section: &[Vec<char>], c1: usize, c2: usize) -> bool {
 }
 
 fn find_vertical(section: &[Vec<char>]) -> Option<usize> {
-    (0..section[0].len() - 1).find(|&i| {
+    (0..section[0].len() - 1)
+        .find(|&i| {
             (0..=i)
                 .rev()
                 .zip(i + 1..section[0].len())
                 .all(|(i, ii)| equal_columns(section, i, ii))
-    }).map(|i| i + 1)
+        })
+        .map(|i| i + 1)
 }
 
 fn find_horizontal(section: &Vec<Vec<char>>) -> Option<usize> {
-    (0..section.len() - 1).find(|&i| {
+    (0..section.len() - 1)
+        .find(|&i| {
             (0..=i)
                 .rev()
                 .zip(i + 1..section.len())
                 .all(|(i, ii)| section[i] == section[ii])
-    }).map(|i| i + 1)
+        })
+        .map(|i| i + 1)
 }
 
 fn part_1(input: &str) -> String {
