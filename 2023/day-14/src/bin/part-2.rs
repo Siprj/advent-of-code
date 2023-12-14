@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 fn parse(input: &str) -> Vec<Vec<char>> {
     input.lines().map(|l| l.chars().collect()).collect()
@@ -107,7 +107,7 @@ fn part_2(input: &str) -> String {
             let last_matching = index_map.get(&platform).unwrap();
             let a = 1000000000 - last_matching;
             let b = a % (i - last_matching);
-            return iterations[last_matching+b - 1].1.to_string();
+            return iterations[last_matching + b - 1].1.to_string();
         } else {
             index_map.insert(platform.clone(), i);
         }
