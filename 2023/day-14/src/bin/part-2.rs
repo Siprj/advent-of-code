@@ -1,4 +1,4 @@
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 
 fn parse(input: &str) -> Vec<Vec<char>> {
     input.lines().map(|l| l.chars().collect()).collect()
@@ -48,7 +48,7 @@ fn move_west(platform: &mut Vec<Vec<char>>) {
     for row in platform.iter_mut() {
         loop {
             let mut moved = false;
-            for x in 0..row.len() - 1{
+            for x in 0..row.len() - 1 {
                 if row[x] == '.' {
                     if row[x + 1] == 'O' {
                         row[x] = row[x + 1];
@@ -102,17 +102,17 @@ fn part_2(input: &str) -> String {
                 }
             }
         }
-        println!("iteration: {}, stress: {}",i, sum);
         iterations.push((i, sum));
-        if index_map.contains_key(&platform){
-            let kwa = index_map.get(&platform).unwrap();
-            println!("index: {}, kwa: {}", i, kwa);
-            break;
+        if index_map.contains_key(&platform) {
+            let last_matching = index_map.get(&platform).unwrap();
+            let a = 1000000000 - last_matching;
+            let b = a % (i - last_matching);
+            return iterations[last_matching+b - 1].1.to_string();
         } else {
             index_map.insert(platform.clone(), i);
         }
     }
-    todo!();
+    unreachable!()
 }
 
 fn main() {
@@ -137,6 +137,6 @@ O.#..O.#.#
 .......O..
 #....###..
 #OO..#....";
-        assert_eq!(part_2(input), "136");
+        assert_eq!(part_2(input), "64");
     }
 }
