@@ -1,33 +1,37 @@
 #![feature(binary_heap_into_iter_sorted)]
 use std::cmp::Ordering;
-use std::collections::{BinaryHeap, HashMap};
+use std::collections::{BinaryHeap, HashSet};
 use std::usize;
 
 const DIRECTION_LIMIT: u32 = 2;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
 enum Direction {
-    Up(u32),
-    Down(u32),
-    Left(u32),
-    Right(u32),
+    Up,
+    Down,
+    Left,
+    Right,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
+struct MoveState {
+    direction: Direction,
+    position: (isize, isize),
+    steps: u32,
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 struct State {
     cost: u32,
-    position: (usize, usize),
-    direction: Direction,
-//    path: Vec<(usize, usize, u32)>,
+    move_state: MoveState,
 }
 
 impl Ord for State {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.cost.cmp(&self.cost).then_with(|| {
-            self.position
-                .cmp(&other.position)
-                .then_with(|| self.direction.cmp(&other.direction))
-        })
+        other
+            .cost
+            .cmp(&self.cost)
+            .then_with(|| self.move_state.cmp(&other.move_state))
     }
 }
 
@@ -37,235 +41,91 @@ impl PartialOrd for State {
     }
 }
 
-fn shortest_path(map: &Vec<Vec<u32>>, goal: (usize, usize)) -> u32 {
-    let mut visited: HashMap<(usize, usize, Direction), u32> = HashMap::new();
+fn direction_to_move(direction: &Direction) -> (isize, isize) {
+    match direction {
+        Direction::Up => (0, -1),
+        Direction::Down => (0, 1),
+        Direction::Left => (-1, 0),
+        Direction::Right => (1, 0),
+    }
+}
+
+fn next_positions(move_state: &MoveState, size: &(isize, isize)) -> Vec<MoveState> {
+    let mut moves = match move_state.direction {
+        Direction::Up => vec![(Direction::Left, 0), (Direction::Right, 0)],
+        Direction::Down => vec![(Direction::Left, 0), (Direction::Right, 0)],
+        Direction::Left => vec![(Direction::Up, 0), (Direction::Down, 0)],
+        Direction::Right => vec![(Direction::Up, 0), (Direction::Down, 0)],
+    };
+
+    if move_state.steps < DIRECTION_LIMIT {
+        moves.push((move_state.direction, move_state.steps + 1));
+    }
+
+    moves
+        .iter()
+        .map(|(dir, steps)| {
+            let m = direction_to_move(dir);
+            let new_pos = (move_state.position.0 + m.0, move_state.position.1 + m.1);
+            MoveState {
+                direction: *dir,
+                position: new_pos,
+                steps: *steps,
+            }
+        })
+        .filter(|moved| {
+            moved.position.0 >= 0
+                && moved.position.0 < size.0
+                && moved.position.1 >= 0
+                && moved.position.1 < size.1
+        })
+        .collect()
+}
+
+fn get_value(map: &[Vec<u32>], pos: &(isize, isize)) -> u32 {
+    map[pos.1 as usize][pos.0 as usize]
+}
+
+fn shortest_path(map: &Vec<Vec<u32>>, goal: (isize, isize)) -> u32 {
+    let mut visited: HashSet<MoveState> = HashSet::new();
 
     let mut heap = BinaryHeap::new();
+    let size = (map[0].len() as isize, map.len() as isize);
 
     heap.push(State {
         cost: 0,
-        position: (0, 0),
-        direction: Direction::Right(0),
-//        path: vec![(0, 0, 0)],
+        move_state: MoveState {
+            direction: Direction::Right,
+            position: (0, 0),
+            steps: 0,
+        },
     });
     heap.push(State {
         cost: 0,
-        position: (0, 0),
-        direction: Direction::Down(0),
-//        path: vec![(0, 0, 0)],
+        move_state: MoveState {
+            direction: Direction::Down,
+            position: (0, 0),
+            steps: 0,
+        },
     });
-
-
-    let mut count: usize = 0;
-
 
     while let Some(best) = heap.pop() {
-        if count % 10000 == 0 {
-            println!("best: {:?}", best);
-            println!("heap.len(): {}", heap.len());
-            heap = heap.into_iter_sorted().take(10000000).collect();
-            println!("visited.len(): {}", visited.len());
-        }
-        count += 1;
-        //        println!("best: {best:?}");
-        //        println!("heap: {heap:?}\n");
-        // Alternatively we could have continued to find all shortest paths
-        if best.position == goal {
-            //for y in 0..map.len() {
-            //    for x in 0..map[0].len() {
-            //        //print!("({:>2}, {:>2}) [{}]", x, y, map[y][x]);
-            //        print!(" [{}]",map[y][x]);
-            //        if visited[y][x] == u32::MAX {
-            //            print!(" MAX ");
-            //        } else {
-
-            //            print!("{:>4} ", visited[y][x])
-            //        }
-            //    }
-            //    println!();
-            //}
-            //println!("best: {:?}", best);
+        if best.move_state.position == goal {
             return best.cost;
         }
 
-        // Important as we may have already found a better way
-        if let Some(visited_cost) = visited.get(&(best.position.0, best.position.1, best.direction)) {
-            if visited_cost < &best.cost {
+        if visited.contains(&best.move_state) {
             continue;
-            } else {
-                visited.insert((best.position.0, best.position.1, best.direction), best.cost);
-            }
         } else {
-            visited.insert((best.position.0, best.position.1, best.direction), best.cost);
+            visited.insert(best.move_state);
         }
 
-        match best.direction {
-            Direction::Up(n) => {
-                if n != DIRECTION_LIMIT {
-                    if let Some(next_y) = best.position.1.checked_sub(1) {
-//                        let mut new_path = best.path.clone();
-                        let cost = map[next_y][best.position.0] + best.cost;
-//                        new_path.push((best.position.0,next_y, cost));
-                        let next = State {
-                            cost,
-                            position: (best.position.0, next_y),
-                            direction: Direction::Up(n + 1),
-//                            path: new_path,
-                        };
-                        heap.push(next);
-                    }
-                }
-                if let Some(next_x) = best.position.0.checked_sub(1) {
-                    let cost = map[best.position.1][next_x] + best.cost;
-//                    let mut new_path = best.path.clone();
-//                    new_path.push((next_x, best.position.1, cost));
-                    let next = State {
-                        cost,
-                        position: (next_x, best.position.1),
-                        direction: Direction::Left(0),
-//                        path: new_path,
-                    };
-                    heap.push(next);
-                }
-                let next_x = best.position.0 + 1;
-                if next_x < map[0].len() {
-                    let cost = map[best.position.1][next_x] + best.cost;
-//                    let mut new_path = best.path.clone();
-//                    new_path.push((next_x, best.position.1, cost));
-                    let next = State {
-                        cost,
-                        position: (next_x, best.position.1),
-                        direction: Direction::Right(0),
-//                        path: new_path,
-                    };
-                    heap.push(next);
-                }
-            }
-            Direction::Down(n) => {
-                if n != DIRECTION_LIMIT {
-                    let next_y = best.position.1 + 1;
-                    if next_y < map.len() {
-//                        let mut new_path = best.path.clone();
-                        let cost = map[next_y][best.position.0] + best.cost;
-//                        new_path.push((best.position.0, next_y, cost));
-                        let next = State {
-                            cost,
-                            position: (best.position.0, next_y),
-                            direction: Direction::Down(n + 1),
-//                            path: new_path,
-                        };
-                        heap.push(next);
-                    }
-                }
-                if let Some(next_x) = best.position.0.checked_sub(1) {
-                    let cost = map[best.position.1][next_x] + best.cost;
-//                    let mut new_path = best.path.clone();
-//                    new_path.push((next_x, best.position.1, cost));
-                    let next = State {
-                        cost,
-                        position: (next_x, best.position.1),
-                        direction: Direction::Left(0),
-//                        path: new_path,
-                    };
-                    heap.push(next);
-                }
-                let next_x = best.position.0 + 1;
-                if next_x < map[0].len() {
-                    let cost = map[best.position.1][next_x] + best.cost;
-//                    let mut new_path = best.path.clone();
-//                    new_path.push((next_x, best.position.1, cost));
-                    let next = State {
-                        cost,
-                        position: (next_x, best.position.1),
-                        direction: Direction::Right(0),
-//                        path: new_path,
-                    };
-                    heap.push(next);
-                }
-            }
-            Direction::Left(n) => {
-                if n != DIRECTION_LIMIT {
-                    if let Some(next_x) = best.position.0.checked_sub(1) {
-//                        let mut new_path = best.path.clone();
-                        let cost = map[best.position.1][next_x] + best.cost;
-//                        new_path.push((next_x, best.position.1, cost));
-                        let next = State {
-                            cost,
-                            position: (next_x, best.position.1),
-                            direction: Direction::Left(n + 1),
-//                            path: new_path,
-                        };
-                        heap.push(next);
-                    }
-                }
-                if let Some(next_y) = best.position.1.checked_sub(1) {
-                    let cost = map[next_y][best.position.0] + best.cost;
-//                    let mut new_path = best.path.clone();
-//                    new_path.push((best.position.0, next_y, cost));
-                    let next = State {
-                        cost,
-                        position: (best.position.0, next_y),
-                        direction: Direction::Up(0),
-//                        path: new_path,
-                    };
-                    heap.push(next);
-                }
-                let next_y = best.position.1 + 1;
-                if next_y < map.len() {
-                    let cost = map[next_y][best.position.0] + best.cost;
-//                    let mut new_path = best.path.clone();
-//                    new_path.push((best.position.0, next_y, cost));
-                    let next = State {
-                        cost,
-                        position: (best.position.0, next_y),
-                        direction: Direction::Down(0),
-//                        path: new_path,
-                    };
-                    heap.push(next);
-                }
-            }
-
-            Direction::Right(n) => {
-                if n != DIRECTION_LIMIT {
-                    let next_x = best.position.0 + 1;
-                    if next_x < map[0].len() {
-//                        let mut new_path = best.path.clone();
-                        let cost = map[best.position.1][next_x] + best.cost;
-//                        new_path.push((next_x, best.position.1, cost));
-                        let next = State {
-                            cost,
-                            position: (next_x, best.position.1),
-                            direction: Direction::Right(n + 1),
-//                            path: new_path,
-                        };
-                        heap.push(next);
-                    }
-                }
-                if let Some(next_y) = best.position.1.checked_sub(1) {
-                    let cost = map[next_y][best.position.0] + best.cost;
-//                    let mut new_path = best.path.clone();
-//                    new_path.push((best.position.0, next_y, cost));
-                    let next = State {
-                        cost,
-                        position: (best.position.0, next_y),
-                        direction: Direction::Up(0),
-//                        path: new_path,
-                    };
-                    heap.push(next);
-                }
-                let next_y = best.position.1 + 1;
-                if next_y < map.len() {
-                    let cost = map[next_y][best.position.0] + best.cost;
-//                    let mut new_path = best.path.clone();
-//                    new_path.push((best.position.0, next_y, cost));
-                    let next = State {
-                        cost,
-                        position: (best.position.0, next_y),
-                        direction: Direction::Down(0),
-//                        path: new_path,
-                    };
-                    heap.push(next);
-                }
+        for next_position in next_positions(&best.move_state, &size) {
+            if !visited.contains(&next_position) {
+                heap.push(State {
+                    cost: best.cost + get_value(map, &next_position.position),
+                    move_state: next_position,
+                });
             }
         }
     }
@@ -281,7 +141,11 @@ fn parse(input: &str) -> Vec<Vec<u32>> {
 
 fn part_1(input: &str) -> String {
     let map = parse(input);
-    shortest_path(&map, (map[0].len() - 1, map.len() - 1)).to_string()
+    shortest_path(
+        &map,
+        ((map[0].len() - 1) as isize, (map.len() - 1) as isize),
+    )
+    .to_string()
 }
 
 fn main() {
