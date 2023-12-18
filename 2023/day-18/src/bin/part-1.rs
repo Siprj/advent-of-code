@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use winnow::{
     ascii::{multispace0, multispace1, dec_int},
     combinator::{eof, repeat_till0, terminated},
@@ -54,95 +52,50 @@ fn parse(input: &str) -> Vec<Line> {
         .0
 }
 
-fn walk(lines: &Vec<Line>) -> Vec<(i32, i32)> {
+fn trench_vertices(lines: &Vec<Line>) -> (Vec<(i32, i32)>, i32) {
     let mut trench = vec![];
     let mut pos = (0i32, 0i32);
+    let mut trench_count = 0;
     for line in lines {
         match line.direction {
             Direction::U => {
-                for diff in 1..=line.steps {
-                    trench.push((pos.0, pos.1 - diff));
-                }
+                trench_count += line.steps;
+                trench.push((pos.0, pos.1 - line.steps));
             },
             Direction::D => {
-                for diff in 1..=line.steps {
-                    trench.push((pos.0, pos.1 + diff));
-                }
+                trench_count += line.steps;
+                trench.push((pos.0, pos.1 + line.steps));
             }
             Direction::R => {
-                for diff in 1..=line.steps {
-                    trench.push((pos.0 + diff, pos.1));
-                }
+                trench_count += line.steps;
+                trench.push((pos.0 + line.steps, pos.1));
             }
             Direction::L => {
-                for diff in 1..=line.steps {
-                    trench.push((pos.0 - diff, pos.1));
-                }
+                trench_count += line.steps;
+                trench.push((pos.0 - line.steps, pos.1));
             }
         }
         pos = trench.last().unwrap().clone();
     }
-    trench
-}
-
-fn trace_iside(trench_set: &HashSet<(i32, i32)>, pos: &(i32, i32), min_x: i32) -> bool {
-    let mut intersections = 0;
-    for x in min_x..pos.0 {
-        if trench_set.contains(&(x, pos.1)) {
-            intersections += 1;
-        }
-    }
-    intersections % 2 == 1
+    (trench, trench_count)
 }
 
 
 fn part_1(input: &str) -> String {
     let lines = parse(input);
-    let trench = walk(&lines);
-    let mut trench_set: HashSet<(i32, i32)> = trench.iter().copied().collect();
-    let min_x = trench.iter().min_by_key(|a| a.0).unwrap().0;
-
-    let start_positions = vec![(1,1), (-1,-1), (-1,1), (1, -1)];
-    let start = start_positions.iter().find(|pos|trace_iside(&trench_set, pos, min_x)).unwrap().clone();
+    let (trench, trench_count) = trench_vertices(&lines);
 
 
-    let mut stack: Vec<(i32, i32)> = vec![start];
+    let mut area = 0i32;
 
-    while let Some(pos) = stack.pop() {
-        let new_pos = (pos.0 - 1, pos.1);
-        if !trench_set.contains(&new_pos) {
-            trench_set.insert(new_pos);
-            stack.push(new_pos);
-        }
-        let new_pos = (pos.0 + 1, pos.1);
-        if !trench_set.contains(&new_pos) {
-            trench_set.insert(new_pos);
-            stack.push(new_pos);
-        }
-        let new_pos = (pos.0, pos.1 - 1);
-        if !trench_set.contains(&new_pos) {
-            trench_set.insert(new_pos);
-            stack.push(new_pos);
-        }
-        let new_pos = (pos.0, pos.1 + 1);
-        if !trench_set.contains(&new_pos) {
-            trench_set.insert(new_pos);
-            stack.push(new_pos);
-        }
+    for i in 0..trench.len() {
+        let i = i as isize;
+        let ii = (i + 1) % (trench.len() as isize);
+        let i_ = (i - 1).rem_euclid(trench.len() as isize);
+        area += trench[i as usize].1 *(trench[i_ as usize].0 - trench[ii as usize].0);
     }
 
-//    for y in min_y..=max_y {
-//        for x in min_x..=max_x {
-//            if trench_set.contains(&(x,y)) {
-//                print!("#");
-//            } else {
-//                print!(".");
-//            }
-//        }
-//        println!();
-//    }
-
-    trench_set.len().to_string()
+    ((area.abs() / 2) + (trench_count/2 ) + 1).to_string()
 }
 
 fn main() {
