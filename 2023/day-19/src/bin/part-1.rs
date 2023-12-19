@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use winnow::{
-    ascii::{dec_uint, newline, multispace0},
+    ascii::{dec_uint, multispace0, newline},
     combinator::{alt, eof, preceded, repeat_till0, separated, terminated},
     token::{one_of, take_till, take_until1},
     PResult, Parser,
@@ -105,7 +105,7 @@ fn parts_parser(input: &mut &str) -> PResult<Vec<Part>> {
     separated(1.., part_parser, newline).parse_next(input)
 }
 fn all_parse(input: &mut &str) -> PResult<(Workflows, Vec<Part>)> {
-    terminated((workflows_parser, parts_parser), (multispace0 ,eof)).parse_next(input)
+    terminated((workflows_parser, parts_parser), (multispace0, eof)).parse_next(input)
 }
 
 fn parse(input: &str) -> (Workflows, Vec<Part>) {
