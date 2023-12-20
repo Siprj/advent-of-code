@@ -1,5 +1,7 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
+use num::integer::lcm;
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Puls {
@@ -62,7 +64,7 @@ struct ModuleState {
 fn initialize_state(modules: &HashMap<String,Module>) -> HashMap<String, ModuleState> {
     let module_inputs: HashMap<String, HashSet<String>> = modules.iter().fold(HashMap::new(), |mut acc, module| {
         for destination in module.1.destinations.iter() {
-            acc.entry(destination.clone()).or_insert(HashSet::new()).insert(module.0.clone());
+            acc.entry(destination.clone()).or_default().insert(module.0.clone());
         }
         acc
     });
@@ -76,11 +78,11 @@ fn initialize_state(modules: &HashMap<String,Module>) -> HashMap<String, ModuleS
     }).collect()
 }
 
-fn solve(mut modules: HashMap<String, ModuleState>) -> u64 {
+fn solve(mut modules: HashMap<String, ModuleState>, looking_for: &str) -> u64 {
     let mut low_pulses = 0;
     let mut high_pulses = 0;
 
-    for i in 0.. {
+    for i in 1.. {
         if i % 100000 == 0{
             println!("i: {}", i);
         }
@@ -88,8 +90,8 @@ fn solve(mut modules: HashMap<String, ModuleState>) -> u64 {
         pulses_to_process.push_back(("broadcaster".to_string(), Puls::Low, "button".to_string()));
         low_pulses += 1;
         while let Some((to, puls, from)) = pulses_to_process.pop_front() {
-            if "rx" == to && puls == Puls::Low {
-                return i;
+            if looking_for == to && puls == Puls::Low {
+                    return i;
             }
             if let Some(destination_module) = modules.get_mut(&to) {
                 let empty_vec = vec![];
@@ -125,11 +127,61 @@ fn solve(mut modules: HashMap<String, ModuleState>) -> u64 {
     low_pulses * high_pulses
 }
 
+fn generate_dot(modules: &HashMap<String, Module>) -> String {
+    let mut output = String::new();
+    output.push_str("digraph g {\nbutton -> broadcaster;\n");
+    for (name, module) in modules.iter() {
+        for destination_name in module.destinations.clone() {
+            let mut to = String::new();
+            if let Some(destination_module) = modules.get(&destination_name) {
+                to.push('\"');
+                match destination_module.module_type {
+                    ModuleType::FlipFlop => to.push_str("\\%"),
+                    ModuleType::Conjunction => to.push('&'),
+                    ModuleType::Broadcaster => {},
+                }
+                to.push_str(&destination_name);
+                to.push('\"');
+            } else {
+                to.push_str(&destination_name);
+            }
+
+            let mut from = String::new();
+            from.push('\"');
+            match module.module_type {
+                ModuleType::FlipFlop => from.push_str("\\%"),
+                ModuleType::Conjunction => from.push('&'),
+                ModuleType::Broadcaster => {},
+            }
+            from.push_str(name);
+            from.push('\"');
+
+            output.push_str(&from);
+            output.push_str(" -> ");
+            output.push_str(&to);
+            output.push_str(";\n");
+
+        }
+
+    }
+    output.push_str("}\n");
+    output
+}
+
 fn part_2(input: &str) -> String {
-    let modules = parse(&input);
-    let initialized_modules = initialize_state(&modules);
-    dbg!(&initialized_modules);
-    solve(initialized_modules).to_string()
+    let modules = parse(input);
+    let dot = generate_dot(&modules);
+    // This solution is done based on the data analysis, not sure what the
+    // general solution would be. I guess One could walk backwards and try to
+    // find the loops by test running the solve algorithm on the sub graphs.
+    println!("{dot}");
+    let mut output = 1;
+    for looking_for in ["hf", "sb", "nd", "ds"] {
+        let initialized_modules = initialize_state(&modules);
+        let m = solve(initialized_modules, looking_for);
+        output = lcm(output, m);
+    }
+    output.to_string()
 }
 
 fn main() {
