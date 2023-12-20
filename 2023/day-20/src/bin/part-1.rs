@@ -62,7 +62,7 @@ struct ModuleState {
 fn initialize_state(modules: &HashMap<String,Module>) -> HashMap<String, ModuleState> {
     let module_inputs: HashMap<String, HashSet<String>> = modules.iter().fold(HashMap::new(), |mut acc, module| {
         for destination in module.1.destinations.iter() {
-            acc.entry(destination.clone()).or_insert(HashSet::new()).insert(module.0.clone());
+            acc.entry(destination.clone()).or_default().insert(module.0.clone());
         }
         acc
     });
@@ -120,7 +120,7 @@ fn solve(mut modules: HashMap<String, ModuleState>) -> u64 {
 }
 
 fn part_1(input: &str) -> String {
-    let modules = parse(&input);
+    let modules = parse(input);
     let initialized_modules = initialize_state(&modules);
     dbg!(&initialized_modules);
     solve(initialized_modules).to_string()
