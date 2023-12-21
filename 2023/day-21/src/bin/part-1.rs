@@ -1,19 +1,32 @@
 use std::collections::HashSet;
 
 fn parse(input: &str) -> (Vec<Vec<char>>, (isize, isize)) {
-    let mut map: Vec<Vec<char>> = input.lines().map(|line|line.chars().collect()).collect();
-    let start = map.iter().enumerate().find_map(|(y, line)| line.iter().position(|c| c == &'S').map(|x| (x,y))).unwrap();
+    let mut map: Vec<Vec<char>> = input.lines().map(|line| line.chars().collect()).collect();
+    let start = map
+        .iter()
+        .enumerate()
+        .find_map(|(y, line)| line.iter().position(|c| c == &'S').map(|x| (x, y)))
+        .unwrap();
     map[start.1][start.0] = '.';
     (map, (start.0 as isize, start.1 as isize))
 }
 
-const NEXT: [(isize, isize);4] = [(-1, 0), (1,0), (0,1), (0,-1)];
+const NEXT: [(isize, isize); 4] = [(-1, 0), (1, 0), (0, 1), (0, -1)];
 
-fn valid_neighbor_positions(map: &Vec<Vec<char>>, position: &(isize, isize), next_positions: &mut HashSet<(isize,isize)>) {
+fn valid_neighbor_positions(
+    map: &Vec<Vec<char>>,
+    position: &(isize, isize),
+    next_positions: &mut HashSet<(isize, isize)>,
+) {
     for next in NEXT {
         let next_x = next.0 + position.0;
         let next_y = next.1 + position.1;
-        if next_x >= 0 && next_x < map[0].len() as isize && next_y >= 0 && next_y < map.len() as isize && map[next_y as usize][next_x as usize] != '#' {
+        if next_x >= 0
+            && next_x < map[0].len() as isize
+            && next_y >= 0
+            && next_y < map.len() as isize
+            && map[next_y as usize][next_x as usize] != '#'
+        {
             next_positions.insert((next_x, next_y));
         }
     }
@@ -59,5 +72,68 @@ mod tests {
 .##..##.##.
 ...........";
         assert_eq!(part_1(input, 6), "16");
+    }
+
+    #[test]
+    fn it_works_2() {
+        let input: &str = "...........
+.....###.#.
+.###.##..#.
+..#.#...#..
+....#.#....
+.##..S####.
+.##..#...#.
+.......##..
+.##.#.####.
+.##..##.##.
+...........";
+        assert_eq!(part_1(input, 100), "100");
+    }
+
+    #[test]
+    fn it_works_3() {
+        let input: &str = "...........
+.....###.#.
+.###.##..#.
+..#.#...#..
+....#.#....
+.##..S####.
+.##..#...#.
+.......##..
+.##.#.####.
+.##..##.##.
+...........";
+        assert_eq!(part_1(input, 101), "101");
+    }
+    #[test]
+    fn it_works_4() {
+        let input: &str = "...........
+.....###.#.
+.###.##..#.
+..#.#...#..
+....#.#....
+.##..S####.
+.##..#...#.
+.......##..
+.##.#.####.
+.##..##.##.
+...........";
+        assert_eq!(part_1(input, 102), "100");
+    }
+
+    #[test]
+    fn it_works_5() {
+        let input: &str = "...........
+.....###.#.
+.###.##..#.
+..#.#...#..
+....#.#....
+.##..S####.
+.##..#...#.
+.......##..
+.##.#.####.
+.##..##.##.
+...........";
+        assert_eq!(part_1(input, 103), "101");
     }
 }
