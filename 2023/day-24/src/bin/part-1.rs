@@ -1,12 +1,12 @@
 use itertools::Itertools;
+use ndarray::array;
+use ndarray_linalg::Solve;
 
 struct ParametricLine {
     x: f64,
     y: f64,
-    z: f64,
     x_d: f64,
     y_d: f64,
-    z_d: f64,
 }
 
 fn parse(input: &str) -> Vec<ParametricLine> {
@@ -15,16 +15,14 @@ fn parse(input: &str) -> Vec<ParametricLine> {
         .map(|l| {
             let (left, right) = l.split_once(" @ ").unwrap();
             let (x, rest) = left.split_once(", ").unwrap();
-            let (y, z) = rest.split_once(", ").unwrap();
+            let (y, _z) = rest.split_once(", ").unwrap();
             let (x_d, rest) = right.split_once(", ").unwrap();
-            let (y_d, z_d) = rest.split_once(", ").unwrap();
+            let (y_d, _z_d) = rest.split_once(", ").unwrap();
             ParametricLine {
-                x: x.parse().unwrap(),
-                y: y.parse().unwrap(),
-                z: z.parse().unwrap(),
-                x_d: x_d.parse().unwrap(),
-                y_d: y_d.parse().unwrap(),
-                z_d: z_d.parse().unwrap(),
+                x: x.trim().parse().unwrap(),
+                y: y.trim().parse().unwrap(),
+                x_d: x_d.trim().parse().unwrap(),
+                y_d: y_d.trim().parse().unwrap(),
             }
         })
         .collect()
@@ -32,11 +30,24 @@ fn parse(input: &str) -> Vec<ParametricLine> {
 
 fn part_1(input: &str, from: f64, to: f64) -> String {
     let lines = parse(input);
-    let sum: usize = 0;
-    for two_lines in lines.iter().permutations(2) {
-        let line_1 = &two_lines[0];
-        let line_2 = &two_lines[1];
-        line_1.x
+    let mut sum: usize = 0;
+    for (line_1, line_2) in lines.iter().tuple_combinations() {
+        let a = array![[line_1.x_d, -line_2.x_d], [line_1.y_d, -line_2.y_d]];
+        let b = array![line_2.x - line_1.x, line_2.y - line_1.y];
+        match a.solve(&b) {
+            Ok(ts) => {
+                let intersection_x = (line_1.x_d * ts[0]) + line_1.x;
+                let intersection_y = (line_1.y_d * ts[0]) + line_1.y;
+                // let z_1 = line_1.z_d * ts[0] + line_1.z;
+                // let z_2 = line_2.z_d * ts[1] + line_2.z;
+                //println!("z_1: {}, z_2: {}", z_1, z_2);
+                if ts[0] >= 0. && ts[1] >= 0. && intersection_x >= from && intersection_x <= to &&
+                   intersection_y >= from && intersection_y <= to /*&& ((z_1 - z_2).abs() <= std::f64::EPSILON)*/{
+                    sum += 1;
+                }
+            },
+            Err(_) => {},
+        }
     }
     sum.to_string()
 }
