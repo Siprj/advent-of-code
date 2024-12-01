@@ -41,12 +41,18 @@ fn part_1(input: &str, from: f64, to: f64) -> String {
                 // let z_1 = line_1.z_d * ts[0] + line_1.z;
                 // let z_2 = line_2.z_d * ts[1] + line_2.z;
                 //println!("z_1: {}, z_2: {}", z_1, z_2);
-                if ts[0] >= 0. && ts[1] >= 0. && intersection_x >= from && intersection_x <= to &&
-                   intersection_y >= from && intersection_y <= to /*&& ((z_1 - z_2).abs() <= std::f64::EPSILON)*/{
+                if ts[0] >= 0.
+                    && ts[1] >= 0.
+                    && intersection_x >= from
+                    && intersection_x <= to
+                    && intersection_y >= from
+                    && intersection_y <= to
+                /*&& ((z_1 - z_2).abs() <= std::f64::EPSILON)*/
+                {
                     sum += 1;
                 }
-            },
-            Err(_) => {},
+            }
+            Err(_) => {}
         }
     }
     sum.to_string()
