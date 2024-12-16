@@ -5,20 +5,21 @@ struct Robot {
 }
 
 fn parse(input: &str) -> Vec<Robot> {
-    input.trim().lines().map(|l| {
-        let (p, v) = l.split_once(' ').unwrap();
-        let (px, py) = p.split_once(',').unwrap();
-        let p = (px[2..].parse::<i64>().unwrap(), py.parse::<i64>().unwrap());
-        let (vx, vy) = v.split_once(',').unwrap();
-        let v = (vx[2..].parse::<i64>().unwrap(), vy.parse::<i64>().unwrap());
-        Robot {
-            p,
-            v,
-        }
-    }).collect()
+    input
+        .trim()
+        .lines()
+        .map(|l| {
+            let (p, v) = l.split_once(' ').unwrap();
+            let (px, py) = p.split_once(',').unwrap();
+            let p = (px[2..].parse::<i64>().unwrap(), py.parse::<i64>().unwrap());
+            let (vx, vy) = v.split_once(',').unwrap();
+            let v = (vx[2..].parse::<i64>().unwrap(), vy.parse::<i64>().unwrap());
+            Robot { p, v }
+        })
+        .collect()
 }
 
-const SECONDS: i64= 100;
+const SECONDS: i64 = 100;
 
 //fn print_map(robots: &[Robot], width: i64, height: i64) {
 //    let mut map: Vec<Vec<i64>> = (0..height).map(|_|(0..width).map(|_| 0).collect()).collect();
@@ -41,31 +42,36 @@ fn part_1(input: &str, width: i64, height: i64) -> String {
     let mut robots = parse(input);
 
     for robot in robots.iter_mut() {
-        robot.p = ((robot.p.0 + (robot.v.0 * SECONDS)).rem_euclid(width), (robot.p.1 + (robot.v.1 * SECONDS)).rem_euclid(height));
+        robot.p = (
+            (robot.p.0 + (robot.v.0 * SECONDS)).rem_euclid(width),
+            (robot.p.1 + (robot.v.1 * SECONDS)).rem_euclid(height),
+        );
     }
     //print_map(&robots, width, height);
-    let half_width = width/2;
-    let half_height = height/2;
+    let half_width = width / 2;
+    let half_height = height / 2;
 
-    let (ul, ur, dl, dr) = robots.iter().fold((0i64,0i64,0i64,0i64), |(ul, ur, dl, dr), r| {
-        if r.p.0 < half_width {
-            if r.p.1 < half_height {
-                (ul + 1, ur, dl, dr)
+    let (ul, ur, dl, dr) = robots
+        .iter()
+        .fold((0i64, 0i64, 0i64, 0i64), |(ul, ur, dl, dr), r| {
+            if r.p.0 < half_width {
+                if r.p.1 < half_height {
+                    (ul + 1, ur, dl, dr)
+                } else if r.p.1 == half_height {
+                    (ul, ur, dl, dr)
+                } else {
+                    (ul, ur, dl + 1, dr)
+                }
+            } else if r.p.0 == half_width {
+                (ul, ur, dl, dr)
+            } else if r.p.1 < half_height {
+                (ul, ur + 1, dl, dr)
             } else if r.p.1 == half_height {
                 (ul, ur, dl, dr)
             } else {
-                (ul, ur, dl + 1, dr)
+                (ul, ur, dl, dr + 1)
             }
-        } else if r.p.0 == half_width {
-                (ul, ur, dl, dr)
-        } else if r.p.1 < half_height {
-            (ul, ur + 1, dl, dr)
-        } else if r.p.1 == half_height {
-            (ul, ur, dl, dr)
-        } else {
-            (ul, ur, dl, dr + 1)
-        }
-    });
+        });
 
     (ul * ur * dl * dr).to_string()
 }
