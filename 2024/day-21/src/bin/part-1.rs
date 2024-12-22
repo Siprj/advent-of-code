@@ -1,40 +1,36 @@
-use std::{cmp::Reverse, collections::{BinaryHeap, HashMap}, iter::{once, repeat, OnceWith}};
+use std::collections::HashMap;
 
-fn parse(input: &str) -> Vec<Vec<u8>> {
-    input
-        .lines()
-        .map(|l| {
-            l.bytes().collect()
-        }).collect()
+fn parse(input: &str) -> Vec<Vec<char>> {
+    input.lines().map(|l| l.chars().collect()).collect()
 }
 
-const NUM_PAD: [(u8, (i32, i32)); 11] = [
-    (b'7', (0, 0)),
-    (b'8', (0, 1)),
-    (b'9', (0, 2)),
-    (b'4', (1, 0)),
-    (b'5', (1, 1)),
-    (b'6', (1, 2)),
-    (b'1', (2, 0)),
-    (b'2', (2, 1)),
-    (b'3', (2, 2)),
-    (b'0', (3, 1)),
-    (b'A', (3, 2)),
+const NUM_PAD: [(char, (i32, i32)); 11] = [
+    ('7', (0, 0)),
+    ('8', (0, 1)),
+    ('9', (0, 2)),
+    ('4', (1, 0)),
+    ('5', (1, 1)),
+    ('6', (1, 2)),
+    ('1', (2, 0)),
+    ('2', (2, 1)),
+    ('3', (2, 2)),
+    ('0', (3, 1)),
+    ('A', (3, 2)),
 ];
 
-const DIR_PAD: [(u8, (i32, i32)); 5] = [
-    (b'^', (0, 1)),
-    (b'A', (0, 2)),
-    (b'<', (1, 0)),
-    (b'v', (1, 1)),
-    (b'>', (1, 2)),
+const DIR_PAD: [(char, (i32, i32)); 5] = [
+    ('^', (0, 1)),
+    ('A', (0, 2)),
+    ('<', (1, 0)),
+    ('v', (1, 1)),
+    ('>', (1, 2)),
 ];
 
+#[derive(Clone)]
 struct Node {
     cost: usize,
-    depth: usize,
     position: (i32, i32),
-    nodes: BinaryHeap<Reverse<Node>>,
+    path: Vec<char>,
 }
 
 impl PartialEq for Node {
@@ -57,102 +53,167 @@ impl Ord for Node {
     }
 }
 
-fn shortests(start: (i32, i32), end: &(i32, i32), avoid: &(i32, i32)) -> Vec<Vec<u8>> {
+fn shortests(start: (i32, i32), end: &(i32, i32), avoid: &(i32, i32)) -> Vec<Vec<char>> {
     if &start == end {
-        return vec![vec![]];
+        return vec![vec!['A']];
     }
 
-    let mut ret: Vec<Vec<u8>> = Vec::new();
-    let d_x = end.1 - start.1;
-    let d_y = end.0 - start.0;
-    if d_x > 0 {
-        let pos = (start.0, start.1 + 1);
-        if &start != avoid {
-            let nexts = shortests(pos, end, avoid);
-            for n in nexts {
-                ret.push(Vec::from_iter(once(b'>').chain(n.iter().copied())))
+    let mut stack: Vec<Node> = Vec::with_capacity(100); // This size is quite random :D
+    stack.push(Node {
+        cost: 0,
+        position: start,
+        path: Vec::new(),
+    });
+    let mut ret = Vec::new();
+
+    while let Some(node) = stack.pop() {
+        if &node.position == end {
+            ret.push(node.path.clone());
+            continue;
+        }
+
+        if &node.position == avoid {
+            continue;
+        }
+
+        let d_x = end.1 - node.position.1;
+        let d_y = end.0 - node.position.0;
+
+        match d_x.cmp(&0) {
+            std::cmp::Ordering::Less => {
+                let mut node = node.clone();
+                node.path.push('<');
+                node.position.1 -= 1;
+                stack.push(node);
+            }
+            std::cmp::Ordering::Equal => {}
+            std::cmp::Ordering::Greater => {
+                let mut node = node.clone();
+                node.path.push('>');
+                node.position.1 += 1;
+                stack.push(node);
             }
         }
-    } else if d_x < 0 {
-        let pos = (start.0, start.1 - 1);
-        if &start != avoid {
-            let nexts = shortests(pos, end, avoid);
-            for n in nexts {
-                ret.push(Vec::from_iter(once(b'<').chain(n.iter().copied())))
+
+        match d_y.cmp(&0) {
+            std::cmp::Ordering::Less => {
+                let mut node = node.clone();
+                node.path.push('^');
+                node.position.0 -= 1;
+                stack.push(node);
+            }
+            std::cmp::Ordering::Equal => {}
+            std::cmp::Ordering::Greater => {
+                let mut node = node.clone();
+                node.path.push('v');
+                node.position.0 += 1;
+                stack.push(node);
             }
         }
     }
 
-    if d_y > 0 {
-        let pos = (start.0 + 1, start.1);
-        if &start != avoid {
-            let nexts = shortests(pos, end, avoid);
-            for n in nexts {
-                ret.push(Vec::from_iter(once(b'v').chain(n.iter().copied())))
-            }
-        }
-    } else if d_y < 0 {
-        let pos = (start.0 - 1, start.1);
-        if &start != avoid {
-            let nexts = shortests(pos, end, avoid);
-            for n in nexts {
-                ret.push(Vec::from_iter(once(b'^').chain(n.iter().copied())))
-            }
-        }
+    for p in ret.iter_mut() {
+        p.push('A');
     }
 
-    //println!("asdf: {ret:?}");
     ret
 }
 
+fn run_num_pad(input: &Vec<char>) -> (usize, Vec<char>) {
+    let num_pad: HashMap<char, (i32, i32)> = HashMap::from_iter(NUM_PAD.iter().copied());
+    let mut pos = (3, 2);
+    let mut sum = 0;
+    let mut ret_vec = Vec::new();
+    //println!("\n{}", String::from_iter(input.iter()));
+    for c in input {
+        let next = num_pad.get(c).unwrap();
+        let shortests = shortests(pos, next, &(3, 0));
+        pos = *next;
 
-fn run_pad(input: &Vec<u8>, mut pos: (i32, i32), avoid: (i32, i32), pad: &HashMap<u8, (i32, i32)>) -> Vec<Vec<u8>>{
-    let mut ret: Vec<Vec<u8>>  = Vec::with_capacity(1000);
-    ret.push(Vec::new());
+        let ret = shortests
+            .iter()
+            .map(run_dir_pad)
+            .min_by_key(|v| v.0)
+            .unwrap();
+        sum += ret.0;
+        ret_vec.extend(ret.1);
+    }
+    (sum, ret_vec)
+}
+
+fn run_dir_pad(input: &Vec<char>) -> (usize, Vec<char>) {
+    //println!("\n\nrunning multiple times: {input:?}");
+    let dir_pad: HashMap<char, (i32, i32)> = HashMap::from_iter(DIR_PAD.iter().copied());
+    run_pad(input, &dir_pad, 2, &mut HashMap::new())
+}
+
+fn run_pad(
+    input: &Vec<char>,
+    pad: &HashMap<char, (i32, i32)>,
+    depth: usize,
+    cache: &mut HashMap<(usize, Vec<char>), (usize, Vec<char>)>,
+) -> (usize, Vec<char>) {
+    if depth == 0 {
+        return (input.len(), input.clone());
+    }
+    if let Some(shortest) = cache.get(&(depth, input.clone())) {
+        return shortest.clone();
+    }
+
+    let mut paths: Vec<Vec<Vec<char>>> = vec![vec![]];
+
+    let mut pos = (0, 2);
     for c in input {
         let next = pad.get(c).unwrap();
-        let next_shortest = shortests(pos, next, &avoid);
+        let shortests = shortests(pos, next, &(3, 0));
         pos = *next;
-        let cloned = ret.clone();
-        ret.clear();
 
-        for c in cloned.iter() {
-            for n in next_shortest.iter() {
-                ret.push(Vec::from_iter(c.iter().copied().chain(n.iter().copied()).chain(once(b'A'))));
+        let mut tmp_paths = Vec::new();
+        for shortest in shortests.iter() {
+            for p in paths.iter() {
+                let mut new_path = p.clone();
+                new_path.push(shortest.clone());
+                tmp_paths.push(new_path);
             }
         }
+        paths = tmp_paths;
     }
-    ret
-}
 
-fn run_num_pad(input: &Vec<u8>) -> Vec<Vec<u8>> {
-    let num_pad: HashMap<u8, (i32, i32)>  = HashMap::from_iter(NUM_PAD.iter().copied());
-    run_pad(input, (3, 2), (3,0), &num_pad)
-}
+    let mut min = usize::MAX;
+    let mut ret_vec = Vec::new();
+    for path in paths.iter() {
+        let mut sum = 0;
+        let mut v = Vec::new();
+        for sub_path in path.iter() {
+            let ret = run_pad(sub_path, pad, depth - 1, cache);
+            sum += ret.0;
+            v.extend(ret.1);
+        }
 
-fn run_dir_pad(input: &Vec<u8>) -> Vec<Vec<u8>> {
-    let dir_pad: HashMap<u8, (i32, i32)>  = HashMap::from_iter(DIR_PAD.iter().copied());
-    run_pad(input, (0, 2), (0,0), &dir_pad)
+        println!("depth: {depth}, {sum} ::::: {path:?}");
+        if sum < min {
+            ret_vec = v;
+            min = sum;
+        }
+    }
+
+    println! {"min: {min}"};
+
+    cache.insert((depth, input.clone()), (min, ret_vec.clone()));
+
+    (min, ret_vec)
 }
 
 fn part_1(input: &str) -> String {
     let codes = parse(input);
     let mut sum = 0;
     for code in codes.iter() {
-        let mut kwa: Vec<u8> = Vec::new();
-        let next = run_num_pad(code);
-        for n in next {
-            let next = run_dir_pad(&n);
-            for n in next.iter() {
-                let mut next = run_dir_pad(n);
-                next.sort_by_key(|s1| s1.len());
-                if kwa.is_empty() || next[0].len() < kwa.len() {
-                    kwa = next[0].clone();
-                }
-            }
-        }
-        let num: usize = String::from_iter(code[0..3].iter().map(|c| *c as char)).parse::<usize>().unwrap();
-        sum += kwa.len() * num;
+        let len = run_num_pad(code);
+        println!("len: {} :::: {}", len.0, String::from_iter(len.1.iter()));
+        let num: usize = String::from_iter(code[0..3].iter())
+            .parse::<usize>()
+            .unwrap();
+        sum += len.0 * num;
     }
     sum.to_string()
 }
@@ -169,6 +230,12 @@ mod tests {
 
     #[test]
     fn it_works() {
+        let input: &str = "029A";
+        assert_eq!(part_1(input), "1972");
+    }
+
+    #[test]
+    fn it_works2() {
         let input: &str = "029A
 980A
 179A
