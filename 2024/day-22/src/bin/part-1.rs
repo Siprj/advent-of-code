@@ -1,9 +1,9 @@
 fn parse(input: &str) -> Vec<u64> {
-    input.trim()
+    input
+        .trim()
         .lines()
-        .map(|l| {
-            l.parse::<u64>().unwrap()
-        }).collect()
+        .map(|l| l.parse::<u64>().unwrap())
+        .collect()
 }
 
 fn mix(secret: &mut u64, new_value: u64) {
