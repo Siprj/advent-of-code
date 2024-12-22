@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cmp, collections::HashMap};
 
 fn parse(input: &str) -> Vec<Vec<char>> {
     input.lines().map(|l| l.chars().collect()).collect()
@@ -119,30 +119,25 @@ fn shortests(start: (i32, i32), end: &(i32, i32), avoid: &(i32, i32)) -> Vec<Vec
     ret
 }
 
-fn run_num_pad(input: &Vec<char>) -> (usize, Vec<char>) {
+fn run_num_pad(input: &Vec<char>) -> usize {
     let num_pad: HashMap<char, (i32, i32)> = HashMap::from_iter(NUM_PAD.iter().copied());
     let mut pos = (3, 2);
     let mut sum = 0;
-    let mut ret_vec = Vec::new();
-    //println!("\n{}", String::from_iter(input.iter()));
     for c in input {
         let next = num_pad.get(c).unwrap();
         let shortests = shortests(pos, next, &(3, 0));
         pos = *next;
 
-        let ret = shortests
+        sum += shortests
             .iter()
             .map(run_dir_pad)
-            .min_by_key(|v| v.0)
+            .min()
             .unwrap();
-        sum += ret.0;
-        ret_vec.extend(ret.1);
     }
-    (sum, ret_vec)
+    sum
 }
 
-fn run_dir_pad(input: &Vec<char>) -> (usize, Vec<char>) {
-    //println!("\n\nrunning multiple times: {input:?}");
+fn run_dir_pad(input: &Vec<char>) -> usize {
     let dir_pad: HashMap<char, (i32, i32)> = HashMap::from_iter(DIR_PAD.iter().copied());
     run_pad(input, &dir_pad, 2, &mut HashMap::new())
 }
@@ -151,13 +146,13 @@ fn run_pad(
     input: &Vec<char>,
     pad: &HashMap<char, (i32, i32)>,
     depth: usize,
-    cache: &mut HashMap<(usize, Vec<char>), (usize, Vec<char>)>,
-) -> (usize, Vec<char>) {
+    cache: &mut HashMap<(usize, Vec<char>), usize>,
+) -> usize {
     if depth == 0 {
-        return (input.len(), input.clone());
+        return input.len();
     }
     if let Some(shortest) = cache.get(&(depth, input.clone())) {
-        return shortest.clone();
+        return *shortest;
     }
 
     let mut paths: Vec<Vec<Vec<char>>> = vec![vec![]];
@@ -180,28 +175,19 @@ fn run_pad(
     }
 
     let mut min = usize::MAX;
-    let mut ret_vec = Vec::new();
     for path in paths.iter() {
         let mut sum = 0;
-        let mut v = Vec::new();
         for sub_path in path.iter() {
-            let ret = run_pad(sub_path, pad, depth - 1, cache);
-            sum += ret.0;
-            v.extend(ret.1);
+            sum += run_pad(sub_path, pad, depth - 1, cache);
         }
 
-        println!("depth: {depth}, {sum} ::::: {path:?}");
-        if sum < min {
-            ret_vec = v;
-            min = sum;
-        }
+        min = cmp::min(sum, min);
     }
 
-    println! {"min: {min}"};
 
-    cache.insert((depth, input.clone()), (min, ret_vec.clone()));
+    cache.insert((depth, input.clone()), min);
 
-    (min, ret_vec)
+    min
 }
 
 fn part_1(input: &str) -> String {
@@ -209,11 +195,10 @@ fn part_1(input: &str) -> String {
     let mut sum = 0;
     for code in codes.iter() {
         let len = run_num_pad(code);
-        println!("len: {} :::: {}", len.0, String::from_iter(len.1.iter()));
         let num: usize = String::from_iter(code[0..3].iter())
             .parse::<usize>()
             .unwrap();
-        sum += len.0 * num;
+        sum += len * num;
     }
     sum.to_string()
 }
