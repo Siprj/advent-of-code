@@ -128,11 +128,7 @@ fn run_num_pad(input: &Vec<char>) -> usize {
         let shortests = shortests(pos, next, &(3, 0));
         pos = *next;
 
-        sum += shortests
-            .iter()
-            .map(run_dir_pad)
-            .min()
-            .unwrap();
+        sum += shortests.iter().map(run_dir_pad).min().unwrap();
     }
     sum
 }
@@ -183,7 +179,6 @@ fn run_pad(
 
         min = cmp::min(sum, min);
     }
-
 
     cache.insert((depth, input.clone()), min);
 
