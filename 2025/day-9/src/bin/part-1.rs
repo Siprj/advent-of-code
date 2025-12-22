@@ -9,9 +9,9 @@ fn part_1(input: &str) -> String {
 
     for p1 in points.iter() {
         for p2 in points.iter() {
-            let w = p1.0 - p2.0 + 1;
-            let h = p1.1 - p2.1 + 1;
-            let area = (w * h).abs();
+            let w = (p1.x - p2.x).abs() + 1;
+            let h = (p1.y - p2.y).abs() + 1;
+            let area = w * h;
             max = cmp::max(area, max);
         }
     }
